@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import filters, status
 from djoser.views import UserViewSet
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -13,12 +13,12 @@ from rest_framework.permissions import (
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from .pagination import CustomPagination
-from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from .permissions import IsAuthorOrReadOnly, IsAdminOrReadOnly
 from recipes.models import (
     # Favorite,
     Ingredient,
     # IngredientRecipe,
-    # Recipe,
+    Recipe,
     # ShoppingCart,
     Tag)
 from users.models import Subscription
@@ -27,6 +27,8 @@ from .serializers import (
     SubscriptionSerializer,
     TagSerializer,
     IngredientSerializer,
+    RecipeSerializer,
+    RecipeCreateUpdateDeleteSerializer,
 )
 
 User = get_user_model()
@@ -78,14 +80,19 @@ class UsersViewSet(UserViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == 'POST':
-            subscription, _ = Subscription.objects.get_or_create(
+            subscription, created = Subscription.objects.get_or_create(
                 user=user, author=author)
-            serializer = self.get_serializer(
-                subscription, context={'request': request}
-            )
-            return Response(
-                serializer.data, status=status.HTTP_201_CREATED
-            )
+            
+            if created:
+                serializer = self.get_serializer(
+                    subscription, context={'request': request}
+                )
+                return Response(
+                    serializer.data, status=status.HTTP_201_CREATED
+                )
+            return Response({
+                'errors': 'Вы уже подписаны на этого пользователя'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == 'DELETE':
             Subscription.objects.filter(
@@ -95,18 +102,30 @@ class UsersViewSet(UserViewSet):
 
 
 class RecipeViewSet(ModelViewSet):
-    pass
+    queryset = Recipe.objects.all()
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthorOrReadOnly | IsAdminOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+
+    def get_serializer_class(self):
+        if self.request.method in SAFE_METHODS:
+            return RecipeSerializer
+        return RecipeCreateUpdateDeleteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = None
 
 
-class IngredientViewSet(ModelViewSet):
+class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (DjangoFilterBackend,)
-    # filterset_class = IngredientFilter
+    pagination_class = None
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    filterset_fields = ('name',)
+    search_fields = ('name',)

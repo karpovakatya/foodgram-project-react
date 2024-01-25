@@ -1,4 +1,4 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
 from django.db.models import UniqueConstraint
 from django.db.models import (
@@ -9,7 +9,7 @@ from django.db.models import (
     DateTimeField,
     ImageField,
     ManyToManyField,
-    SmallIntegerField,
+    PositiveSmallIntegerField,
     SlugField,
     CASCADE,
 )
@@ -22,7 +22,8 @@ class Ingredient(Model):
 
     name = CharField(
         'Ингредиент',
-        max_length=200
+        max_length=200,
+        unique=True
     )
     measurement_unit = CharField(
         'Единицы измерения',
@@ -43,11 +44,13 @@ class Tag(Model):
 
     name = CharField(
         'Тег',
-        max_length=200
+        max_length=200,
+        unique=True
     )
     color = CharField(
-        'Цвет в HEX',
-        max_length=7
+        'Цвет',
+        max_length=7,
+        unique=True
     )
     slug = SlugField(
         'Уникальный слаг',
@@ -67,36 +70,40 @@ class Tag(Model):
 class Recipe(Model):
     """Рецепт"""
 
+    author = ForeignKey(
+        User,
+        on_delete=CASCADE,
+        related_name='recipes',
+        verbose_name='Автор рецепта'
+    )
     name = CharField('Название', max_length=200)
-    text = TextField('Описание')
+    text = TextField('Описание', blank=False)
     pub_date = DateTimeField(
         'Дата и время публикации',
         auto_now_add=True
     )
     image = ImageField(
         'Фото',
-        upload_to='media/',
-        null=True,
-        blank=True
+        upload_to='recipes/images/'
     )
-    author = ForeignKey(
-        User,
-        on_delete=CASCADE,
-        related_name='recipies',
-        verbose_name='Автор рецепта'
-    )
-    cooking_time = SmallIntegerField(
-        'Время приготовления (в минутах)',
-        validators=[MinValueValidator(1)]
+
+    cooking_time = PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(
+                1,
+                message="Время не может быть менее 1 минуты")
+        ]
     )
     ingredients = ManyToManyField(
         Ingredient,
         through='IngredientRecipe',
+        blank=False,
         related_name='recipies',
         verbose_name='Ингредиенты'
     )
     tags = ManyToManyField(
         Tag,
+        blank=False,
         related_name='recipes',
         verbose_name='Теги'
     )
@@ -107,13 +114,29 @@ class Recipe(Model):
         ordering = ('-pub_date', )
 
     def __str__(self):
-        return self.text
+        return self.name
 
 
 class IngredientRecipe(Model):
     """Промежуточная модель связывает ингредиент и рецепт"""
-    ingredient = ForeignKey(Ingredient, on_delete=CASCADE)
-    recipe = ForeignKey(Recipe, on_delete=CASCADE)
+
+    ingredient = ForeignKey(
+        Ingredient,
+        on_delete=CASCADE,
+        related_name='ingredient_recipe'
+    )
+    recipe = ForeignKey(
+        Recipe,
+        on_delete=CASCADE,
+        related_name='ingredient_recipe'
+    )
+    amount = PositiveSmallIntegerField(
+        'Количество',
+        default=1,
+        validators=(MinValueValidator(1,
+                                      message='Количество должно быть больше 0'
+                                      ),)
+    )
 
     class Meta:
         verbose_name = 'Ингредиенты в рецепте'
@@ -121,7 +144,7 @@ class IngredientRecipe(Model):
         ordering = ('recipe', )
 
     def __str__(self):
-        return f'{self.ingredient} {self.recipe}'
+        return f'{self.ingredient.name} {self.amount}'
 
 
 class Favorite(Model):
@@ -130,7 +153,7 @@ class Favorite(Model):
     user = ForeignKey(
         User,
         on_delete=CASCADE,
-        related_name='user_favorites',
+        related_name='favorites',
         verbose_name='Пользователь',
     )
     recipe = ForeignKey(
@@ -157,7 +180,7 @@ class ShoppingCart(Model):
     user = ForeignKey(
         User,
         on_delete=CASCADE,
-        related_name='user_shopping_cart',
+        related_name='shopping_cart',
         verbose_name='Пользователь'
     )
     recipe = ForeignKey(
@@ -165,6 +188,10 @@ class ShoppingCart(Model):
         on_delete=CASCADE,
         related_name='recipe_shopping_cart',
         verbose_name='Рецепт'
+    )
+    pub_date = DateTimeField(
+        'Дата и время добавления в список',
+        auto_now_add=True
     )
 
     class Meta:
