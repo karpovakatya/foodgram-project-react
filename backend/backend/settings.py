@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-tei4ci!x+m^2x8r+l_czy9gn_d!xo1t7o8el8c@h9r#!wf4&y-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['51.250.106.69', '127.0.0.1', 'localhost', 'foodgram.servecounterstrike.com']
 
 
 # Application definition
@@ -162,3 +162,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 PASSWORD_MAX_LENGHT = 150
 EMAIL_MAX_LENGHT = 254
+INGREDIENT_NAME_MAX_LENGHT = 200
+MES_UNIT_NAME_MAX_LENGHT = 200
+TAG_NAME_MAX_LENGHT = 200
+TAG_COLOR_MAX_LENGHT = 7
+TAG_SLUG_MAX_LENGHT = 200
+FILENAME = 'my_shopping_list.txt'

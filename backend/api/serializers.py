@@ -46,8 +46,6 @@ class UsersCreateSerializer(UserCreateSerializer):
 
 
 class UsersSerializer(UserSerializer):
-    """Вывод данных пользователя"""
-
     is_subscribed = SerializerMethodField(read_only=True)
 
     class Meta:
@@ -81,8 +79,14 @@ class SubscriptionSerializer(ModelSerializer):
     class Meta:
         model = Subscription
         fields = (
-            'email', 'id', 'username', 'first_name',
-            'last_name', 'is_subscribed', 'recipes_count', 'recipes'
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes_count',
+            'recipes'
         )
         read_only_fields = ('author',)
         validators = [UniqueTogetherValidator(
@@ -94,7 +98,9 @@ class SubscriptionSerializer(ModelSerializer):
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
-        return Subscription.objects.filter(user=user, author=obj.author).exists()
+        return Subscription.objects.filter(
+            user=user, author=obj.author
+        ).exists()
 
     def get_recipes_count(self, obj):
         return obj.author.recipes.count()
@@ -212,23 +218,20 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
         for ingredient in value:
             if 'id' not in ingredient or 'amount' not in ingredient:
                 raise ValidationError({
-                    'ingredients': 'Необходимо указать id и/или количество для каждого ингредиента'
+                    'ingredients': 'Не указано количество или id ингредиента'
                 })
             id = ingredient['id']
 
-            # Проверяем наличие ингредиента в базе данных
             if not Ingredient.objects.filter(id=id).exists():
                 raise ValidationError({
                     'ingredients': f"Ингредиент с id={id} не существует"
                 })
 
-            # Проверяем уникальность ингредиента
             if ingredient in ingredients_list:
                 raise ValidationError({
                     'ingredients': 'Ингредиенты дублируются'
                 })
 
-            # Проверяем корректность количества
             if int(ingredient['amount']) <= 0:
                 raise ValidationError({
                     'amount': 'Укажите количество больше 0'
@@ -282,13 +285,16 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
         user = self.context['request'].user
 
         if instance.author != user:
-            raise PermissionDenied({'message': 'Вы не являетесь автором рецепта.'})
+            raise PermissionDenied(
+                {'message': 'Вы не являетесь автором рецепта.'}
+            )
 
         tags = validated_data.pop('tags', None)
         ingredients = validated_data.pop('ingredients', None)
 
         if ingredients is None:
             raise ValidationError({'ingredients': 'Это поле обязательно.'})
+        
         if tags is None:
             raise ValidationError({'tags': 'Это поле обязательно.'})
 

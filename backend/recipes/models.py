@@ -13,6 +13,7 @@ from django.db.models import (
     SlugField,
     CASCADE,
 )
+from backend import settings
 
 User = get_user_model()
 
@@ -22,12 +23,12 @@ class Ingredient(Model):
 
     name = CharField(
         'Ингредиент',
-        max_length=200,
+        max_length=settings.INGREDIENT_NAME_MAX_LENGHT,
         unique=True
     )
     measurement_unit = CharField(
         'Единицы измерения',
-        max_length=200
+        max_length=settings.MES_UNIT_NAME_MAX_LENGHT
     )
 
     class Meta:
@@ -44,18 +45,18 @@ class Tag(Model):
 
     name = CharField(
         'Тег',
-        max_length=200,
+        max_length=settings.TAG_NAME_MAX_LENGHT,
         unique=True
     )
     color = CharField(
         'Цвет',
-        max_length=7,
+        max_length=settings.TAG_COLOR_MAX_LENGHT,
         unique=True
     )
     slug = SlugField(
         'Уникальный слаг',
+        max_length=settings.TAG_SLUG_MAX_LENGHT,
         unique=True,
-        max_length=200
     )
 
     class Meta:
