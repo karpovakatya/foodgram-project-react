@@ -97,7 +97,6 @@ class Recipe(Model):
     ingredients = ManyToManyField(
         Ingredient,
         through='IngredientRecipe',
-        blank=False,
         related_name='recipies',
         verbose_name='Ингредиенты'
     )
@@ -141,10 +140,9 @@ class IngredientRecipe(Model):
     class Meta:
         verbose_name = 'Ингредиенты в рецепте'
         verbose_name_plural = 'Ингредиенты в рецепте'
-        ordering = ('recipe', )
 
     def __str__(self):
-        return f'{self.ingredient.name} {self.amount}'
+        return f'{self.ingredient.name} ({self.ingredient.measurement_unit}) - {self.amount}'
 
 
 class Favorite(Model):
@@ -159,7 +157,7 @@ class Favorite(Model):
     recipe = ForeignKey(
         Recipe,
         on_delete=CASCADE,
-        related_name='recipe_favorites',
+        related_name='favorites',
         verbose_name='Рецепт'
     )
 
@@ -186,12 +184,8 @@ class ShoppingCart(Model):
     recipe = ForeignKey(
         Recipe,
         on_delete=CASCADE,
-        related_name='recipe_shopping_cart',
+        related_name='shopping_cart',
         verbose_name='Рецепт'
-    )
-    pub_date = DateTimeField(
-        'Дата и время добавления в список',
-        auto_now_add=True
     )
 
     class Meta:
