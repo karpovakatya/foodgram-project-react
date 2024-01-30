@@ -1,24 +1,15 @@
-from django.db.models import F
-from django.db import transaction
 from django.contrib.auth import get_user_model
-from djoser.serializers import UserSerializer, UserCreateSerializer
-from rest_framework.exceptions import ValidationError, PermissionDenied
-from rest_framework.validators import UniqueTogetherValidator
+from django.db import transaction
+from django.db.models import F
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework.serializers import (
-    ModelSerializer,
-    SerializerMethodField,
-    StringRelatedField,
-    PrimaryKeyRelatedField,
-    IntegerField,
-)
-from recipes.models import (
-    Recipe,
-    IngredientRecipe,
-    Ingredient,
-    Tag,
-    Favorite,
-)
+from recipes.models import Favorite, Ingredient, IngredientRecipe, Recipe, Tag
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.serializers import (IntegerField, ModelSerializer,
+                                        PrimaryKeyRelatedField,
+                                        SerializerMethodField,
+                                        StringRelatedField)
+from rest_framework.validators import UniqueTogetherValidator
 from users.models import Subscription
 
 User = get_user_model()
@@ -255,9 +246,7 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
 
     def validate_image(self, value):
         if not value:
-            raise ValidationError({
-                    'image': 'Изображение не предоставлено'
-                })
+            raise ValidationError({'image': 'Изображение не предоставлено'})
         return value
 
     @transaction.atomic

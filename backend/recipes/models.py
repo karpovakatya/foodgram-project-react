@@ -1,18 +1,9 @@
-from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
-from django.db.models import UniqueConstraint
-from django.db.models import (
-    Model,
-    ForeignKey,
-    CharField,
-    TextField,
-    DateTimeField,
-    ImageField,
-    ManyToManyField,
-    PositiveSmallIntegerField,
-    SlugField,
-    CASCADE
-)
+from django.core.validators import MinValueValidator
+from django.db.models import (CASCADE, CharField, DateTimeField, ForeignKey,
+                              ImageField, ManyToManyField, Model,
+                              PositiveSmallIntegerField, SlugField, TextField,
+                              UniqueConstraint)
 
 from backend import settings
 
