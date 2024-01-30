@@ -1,4 +1,4 @@
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
 from django.db.models import UniqueConstraint
 from django.db.models import (
@@ -11,8 +11,9 @@ from django.db.models import (
     ManyToManyField,
     PositiveSmallIntegerField,
     SlugField,
-    CASCADE,
+    CASCADE
 )
+
 from backend import settings
 
 User = get_user_model()
@@ -143,7 +144,9 @@ class IngredientRecipe(Model):
         verbose_name_plural = 'Ингредиенты в рецепте'
 
     def __str__(self):
-        return f'{self.ingredient.name} ({self.ingredient.measurement_unit}) - {self.amount}'
+        return (f'{self.ingredient.name} '
+                f'({self.ingredient.measurement_unit}) - '
+                f'{self.amount}')
 
 
 class Favorite(Model):

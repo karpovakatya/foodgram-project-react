@@ -12,7 +12,6 @@ from rest_framework.serializers import (
     PrimaryKeyRelatedField,
     IntegerField,
 )
-
 from recipes.models import (
     Recipe,
     IngredientRecipe,
@@ -34,7 +33,7 @@ class UsersCreateSerializer(UserCreateSerializer):
             'username',
             'first_name',
             'last_name',
-            'password'
+            'password',
         )
         extra_kwargs = {
             'password': {'write_only': True},
@@ -86,7 +85,7 @@ class SubscriptionSerializer(ModelSerializer):
             'last_name',
             'is_subscribed',
             'recipes_count',
-            'recipes'
+            'recipes',
         )
         read_only_fields = ('author',)
         validators = [UniqueTogetherValidator(
@@ -294,7 +293,7 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
 
         if ingredients is None:
             raise ValidationError({'ingredients': 'Это поле обязательно.'})
-        
+
         if tags is None:
             raise ValidationError({'tags': 'Это поле обязательно.'})
 
