@@ -1,5 +1,5 @@
 ### CI baige
-![Foodgram workflow](https://github.com/karpovakatya/foodgram_project_react/actions/workflows/main.yml/badge.svg)
+![Foodgram workflow](https://github.com/karpovakatya/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
 #  Описание проекта
 [Проект Фудграм](http://foodgram.servecounterstrike.com)
