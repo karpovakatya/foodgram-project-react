@@ -7,22 +7,37 @@ from djoser.views import UserViewSet
 from rest_framework import filters, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import (
+    SAFE_METHODS,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                            ShoppingCart, Tag)
+from core import constants
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientRecipe,
+    Recipe,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
+
 from .filters import RecipeFilter
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnly
-from .serializers import (IngredientSerializer,
-                          RecipeCreateUpdateDeleteSerializer, RecipeData,
-                          RecipeSerializer, SubscriptionSerializer,
-                          TagSerializer, UsersSerializer)
-from core import constants
+from .serializers import (
+    IngredientSerializer,
+    RecipeCreateUpdateDeleteSerializer,
+    RecipeData,
+    RecipeSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
+    UsersSerializer,
+)
 
 User = get_user_model()
 
