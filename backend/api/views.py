@@ -37,6 +37,7 @@ from .serializers import (
     SubscriptionSerializer,
     TagSerializer,
     UsersSerializer,
+    SubscribeSerializer,
 )
 
 User = get_user_model()
@@ -69,48 +70,46 @@ class UsersViewSet(UserViewSet):
 
     @action(
         detail=True,
-        methods=['post', 'delete'],
+        methods=('POST',),
         permission_classes=(IsAuthenticated,),
-        serializer_class=SubscriptionSerializer,
     )
-    def subscribe(self, request, **kwargs):
-        """Авторизованный пользователь подписался на автора"""
-        user = request.user
-        id = self.kwargs.get('id')
-        author = get_object_or_404(User, id=id)
-
-        if user == author:
+    def subscribe(self, request, id):
+        check_user = User.objects.filter(id=id)
+        if not check_user.exists():
             return Response(
-                {'errors': 'Нельзя подписаться на самого себя'},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "Нельзя подписатся на несуществующего автора"},
+                status=status.HTTP_404_NOT_FOUND,
             )
+        serializer = SubscribeSerializer(
+            data={"user": self.request.user.id, "author": id},
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if request.method == 'POST':
-            subscription, created = Subscription.objects.get_or_create(
-                user=user, author=author
-            )
-
-            if created:
-                serializer = self.get_serializer(
-                    subscription, context={'request': request}
-                )
-                return Response(
-                    serializer.data, status=status.HTTP_201_CREATED
-                )
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, id):
+        check_user = User.objects.filter(id=id)
+        current_user = self.request.user
+        check_subscribe = Subscription.objects.filter(
+            user=current_user, author=id
+        )
+        if not check_user.exists():
             return Response(
-                {'errors': 'Вы уже подписаны на этого пользователя'},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "Нельзя отписатся от несуществующего автора"},
+                status=status.HTTP_404_NOT_FOUND,
             )
-
-        if request.method == 'DELETE':
-            if not Subscription.objects.filter(
-                user=user, author=author
-            ).exists():
-                raise ValidationError('Нельзя удалить несуществующую подписку')
-            Subscription.objects.get(user=user, author=author).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        if check_subscribe.exists():
+            check_subscribe.delete()
+            return Response(
+                {"detail": "Вы отписались от автора"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+        return Response(
+            {"detail": "Вы уже отписаны от автора"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class RecipeViewSet(ModelViewSet):
