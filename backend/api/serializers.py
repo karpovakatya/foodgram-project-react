@@ -249,27 +249,44 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
 
     def validate(self, data):
         tags = data.get('tags')
-        # image = data.get('image')
+        image = data.get('image')
         ingredients = data.get('ingredients')
         if not ingredients:
             raise ValidationError('Добавьте ингредиенты')
         if not tags:
             raise ValidationError('Укажите хотя бы один тег')
-        # if not image:
-        #     raise ValidationError('Изображение не предоставлено')
+        if not image:
+            raise ValidationError('Изображение не предоставлено')
 
         if len(tags) != len(set(tags)):
             raise ValidationError(
                 'Теги не должны дублироваться'
             )
+        ingredients_list = []
+        for ingredient in ingredients:
+            if 'id' not in ingredient or 'amount' not in ingredient:
+                raise ValidationError({
+                    'ingredients': 'Не указано количество или id ингредиента'
+                })
+            id = ingredient['id']
 
-        ingredients = [
-            ingredient.get('id') for ingredient in data.get('ingredients')
-        ]
-        if len(ingredients) != len(set(ingredients)):
-            raise ValidationError(
-                'Ингредиенты не должны дублироваться'
-            )
+            if not Ingredient.objects.filter(id=id).exists():
+                raise ValidationError({
+                    'ingredients': f"Ингредиент с id={id} не существует"
+                })
+
+            if ingredient in ingredients_list:
+                raise ValidationError({
+                    'ingredients': 'Ингредиенты дублируются'
+                })
+
+            if int(ingredient['amount']) <= 0:
+                raise ValidationError({
+                    'amount': 'Укажите количество больше 0'
+                })
+
+            ingredients_list.append(ingredient)
+
         return data
 
 
