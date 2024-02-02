@@ -10,29 +10,10 @@ from rest_framework.serializers import (IntegerField, ModelSerializer,
                                         SerializerMethodField,
                                         StringRelatedField)
 from rest_framework.validators import UniqueTogetherValidator
+
 from users.models import Subscription
 
 User = get_user_model()
-
-
-class UsersCreateSerializer(UserCreateSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-        )
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'email': {'required': True},
-            'username': {'required': True},
-            'first_name': {'required': True},
-            'last_name': {'required': True},
-        }
 
 
 class UsersSerializer(UserSerializer):

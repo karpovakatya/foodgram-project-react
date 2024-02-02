@@ -1,11 +1,12 @@
+from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db.models import (CASCADE, CharField, DateTimeField, ForeignKey,
                               ImageField, ManyToManyField, Model,
                               PositiveSmallIntegerField, SlugField, TextField,
                               UniqueConstraint)
 
-from backend import settings
+from core import constants
 
 User = get_user_model()
 
@@ -15,18 +16,23 @@ class Ingredient(Model):
 
     name = CharField(
         'Ингредиент',
-        max_length=settings.INGREDIENT_NAME_MAX_LENGHT,
+        max_length=constants.INGREDIENT_NAME_MAX_LENGHT,
         unique=True
     )
     measurement_unit = CharField(
         'Единицы измерения',
-        max_length=settings.MES_UNIT_NAME_MAX_LENGHT
+        max_length=constants.MES_UNIT_NAME_MAX_LENGHT
     )
 
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
         ordering = ('name', )
+        constraints = [
+            UniqueConstraint(
+                fields=['name', 'measurement_unit'], name='ingredient'
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -37,18 +43,16 @@ class Tag(Model):
 
     name = CharField(
         'Тег',
-        max_length=settings.TAG_NAME_MAX_LENGHT,
-        unique=True
+        max_length=constants.TAG_NAME_MAX_LENGHT
     )
-    color = CharField(
+    color = ColorField(
         'Цвет',
-        max_length=settings.TAG_COLOR_MAX_LENGHT,
-        unique=True
+        max_length=constants.TAG_COLOR_MAX_LENGHT
     )
     slug = SlugField(
         'Уникальный слаг',
-        max_length=settings.TAG_SLUG_MAX_LENGHT,
-        unique=True,
+        max_length=constants.TAG_SLUG_MAX_LENGHT,
+        unique=True
     )
 
     class Meta:
@@ -69,7 +73,7 @@ class Recipe(Model):
         related_name='recipes',
         verbose_name='Автор рецепта'
     )
-    name = CharField('Название', max_length=200)
+    name = CharField('Название', max_length=constants.RECIPE_NAME_MAX_LENGHT)
     text = TextField('Описание', blank=False)
     pub_date = DateTimeField(
         'Дата и время публикации',
@@ -79,12 +83,15 @@ class Recipe(Model):
         'Фото',
         upload_to='recipes/images/'
     )
-
     cooking_time = PositiveSmallIntegerField(
         validators=[
             MinValueValidator(
-                1,
-                message="Время не может быть менее 1 минуты")
+                constants.MIN_VALUE,
+                message=(f'Время не может быть менее '
+                         f'{constants.MIN_VALUE} минуты')),
+            MaxValueValidator(
+                constants.MAX_VALUE,
+                message='Время приготовления слишком большое')
         ]
     )
     ingredients = ManyToManyField(
@@ -125,9 +132,11 @@ class IngredientRecipe(Model):
     amount = PositiveSmallIntegerField(
         'Количество',
         default=1,
-        validators=(MinValueValidator(1,
-                                      message='Количество должно быть больше 0'
-                                      ),)
+        validators=(MinValueValidator(
+            constants.MIN_VALUE_AMOUNT,
+            message=(f'Количество должно быть не меньше '
+                     f'{constants.MIN_VALUE_AMOUNT}')
+        ),)
     )
 
     class Meta:

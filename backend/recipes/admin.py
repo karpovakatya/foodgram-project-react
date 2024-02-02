@@ -5,11 +5,22 @@ from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                      ShoppingCart, Tag)
 
 
+class IngredientRecipetInline(admin.TabularInline):
+    model = IngredientRecipe
+    min_num = 1
+
+
 @admin.register(Recipe)
 class RecipeAdmin(ModelAdmin):
-    list_display = ('name', 'id', 'author', 'add_in_favorites')
-    search_fields = ('author', 'name',)
-    list_filter = ('tags',)
+    list_display = (
+        'name',
+        'id',
+        'author',
+        'add_in_favorites'
+    )
+    search_fields = ('author', 'name')
+    list_filter = ('tags', 'name', 'author')
+    inlines = (IngredientRecipetInline,)
 
     @display(description='Добавили в избранное')
     def add_in_favorites(self, obj):

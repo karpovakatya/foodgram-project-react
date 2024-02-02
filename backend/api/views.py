@@ -4,8 +4,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                            ShoppingCart, Tag)
 from rest_framework import filters, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -13,10 +11,10 @@ from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+
+from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
+                            ShoppingCart, Tag)
 from users.models import Subscription
-
-from backend import settings
-
 from .filters import RecipeFilter
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnly
@@ -24,6 +22,7 @@ from .serializers import (IngredientSerializer,
                           RecipeCreateUpdateDeleteSerializer, RecipeData,
                           RecipeSerializer, SubscriptionSerializer,
                           TagSerializer, UsersSerializer)
+from core import constants
 
 User = get_user_model()
 
@@ -142,7 +141,7 @@ class RecipeViewSet(ModelViewSet):
             ]
         )
 
-        filename = settings.FILENAME
+        filename = constants.FILENAME
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response
