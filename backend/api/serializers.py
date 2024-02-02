@@ -34,10 +34,11 @@ class UsersSerializer(UserSerializer):
         )
 
     def get_is_subscribed(self, obj):
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return Subscription.objects.filter(user=user, author=obj).exists()
+        request = self.context.get('request')
+        return bool(request
+                    and request.user.is_authenticated
+                    and Subscription.objects.filter(
+                        user=request.user, author=obj).exists())
 
 
 class SubscriptionSerializer(ModelSerializer):
@@ -83,8 +84,12 @@ class SubscriptionSerializer(ModelSerializer):
         request = self.context.get('request')
         limit = request.GET.get('recipes_limit')
         recipes = obj.author.recipes.all()
-        if limit:
-            recipes = recipes[:int(limit)]
+        try:
+            if limit:
+                limit = int(limit)
+                recipes = recipes[:limit]
+        except ValueError:
+            raise ValueError('limit должен быть целым числом')
         serializer = RecipeData(recipes, many=True, read_only=True)
         return serializer.data
 
