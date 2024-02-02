@@ -34,10 +34,10 @@ from .serializers import (
     RecipeCreateUpdateDeleteSerializer,
     RecipeData,
     RecipeSerializer,
+    SubscribeSerializer,
     SubscriptionSerializer,
     TagSerializer,
     UsersSerializer,
-    SubscribeSerializer,
 )
 
 User = get_user_model()

@@ -80,7 +80,8 @@ class SubscribeSerializer(UserSerializer):
 
 
 class SubscriptionSerializer(ModelSerializer):
-    recipes_count = ReadOnlyField(source="recipes.count")
+    # recipes_count = ReadOnlyField(source="recipes.count")
+    recipes_count = SerializerMethodField()
     recipes = SerializerMethodField()
     is_subscribed = SerializerMethodField(read_only=True)
 
@@ -96,6 +97,9 @@ class SubscriptionSerializer(ModelSerializer):
             'recipes_count',
             'recipes',
         )
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
@@ -203,126 +207,88 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
             'cooking_time',
         )
 
-    def validate_ingredients(self, value):
-        if not value:
-            raise ValidationError({
-                'ingredients': 'Добавьте ингредиенты'
-            })
-        ingredients_list = []
-        for ingredient in value:
-            if 'id' not in ingredient or 'amount' not in ingredient:
-                raise ValidationError({
-                    'ingredients': 'Не указано количество или id ингредиента'
-                })
-            id = ingredient['id']
-
-            if not Ingredient.objects.filter(id=id).exists():
-                raise ValidationError({
-                    'ingredients': f"Ингредиент с id={id} не существует"
-                })
-
-            if ingredient in ingredients_list:
-                raise ValidationError({
-                    'ingredients': 'Ингредиенты дублируются'
-                })
-
-            if int(ingredient['amount']) <= 0:
-                raise ValidationError({
-                    'amount': 'Укажите количество больше 0'
-                })
-
-            ingredients_list.append(ingredient)
-        return value
-
-    def validate_tags(self, value):
-        if not value:
-            raise ValidationError({
-                'tags': 'Укажите хотя бы один тег'
-            })
-        tags_list = []
-        for tag in value:
-            if tag in tags_list:
-                raise ValidationError({
-                    'tags': 'Теги не должны дублироваться'
-                })
-            tags_list.append(tag)
-        return value
-
-    def validate_image(self, value):
-        if not value:
-            raise ValidationError({'image': 'Изображение не предоставлено'})
-        return value
+    def to_representation(self, instance):
+        request = self.context.get("request")
+        serializer = RecipeSerializer(
+            instance, context={"request": request}
+        )
+        return serializer.data
 
     @transaction.atomic
-    def add_ingredients(self, recipe, ingredients):
+    def add_ingredients(self, ingredients, recipe):
         IngredientRecipe.objects.bulk_create(
             IngredientRecipe(
                 recipe=recipe,
-                ingredient=Ingredient.objects.get(id=ingredient['id']),
+                ingredient_id=ingredient['id'],
                 amount=ingredient['amount']
             ) for ingredient in ingredients
         )
 
     @transaction.atomic
-    def create(self, validated):
-        tags = validated.pop('tags')
-        ingredients = validated.pop('ingredients')
-        recipe = Recipe.objects.create(**validated)
+    def create(self, validated_data):
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        validated_data['author'] = self.context['request'].user
+        recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        self.add_ingredients(recipe=recipe, ingredients=ingredients)
+        self.add_ingredients(ingredients, recipe)
         return recipe
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        user = self.context['request'].user
+        if 'ingredients' in validated_data:
+            IngredientRecipe.objects.filter(recipe=instance).delete()
+            ingredients = validated_data.pop('ingredients')
+            self.add_ingredients(ingredients, instance)
 
-        if instance.author != user:
-            raise PermissionDenied(
-                {'message': 'Вы не являетесь автором рецепта.'}
+        if 'tags' in validated_data:
+            tags = validated_data.pop('tags')
+            instance.tags.set(tags)
+
+        return super().update(instance, validated_data)
+
+    def validate(self, data):
+        tags = data.get('tags')
+        # image = data.get('image')
+        ingredients = data.get('ingredients')
+        if not ingredients:
+            raise ValidationError('Добавьте ингредиенты')
+        if not tags:
+            raise ValidationError('Укажите хотя бы один тег')
+        # if not image:
+        #     raise ValidationError('Изображение не предоставлено')
+
+        if len(tags) != len(set(tags)):
+            raise ValidationError(
+                'Теги не должны дублироваться'
             )
 
-        tags = validated_data.pop('tags', None)
-        ingredients = validated_data.pop('ingredients', None)
-
-        if ingredients is None:
-            raise ValidationError({'ingredients': 'Это поле обязательно.'})
-
-        if tags is None:
-            raise ValidationError({'tags': 'Это поле обязательно.'})
-
-        instance = super().update(instance, validated_data)
-        instance.tags.clear()
-        instance.tags.set(tags)
-        instance.ingredients.clear()
-        self.add_ingredients(instance, ingredients)
-
-        instance.save()
-        return instance
-
-    def to_representation(self, instance):
-        request = self.context.get('request')
-        context = {'request': request}
-        return RecipeSerializer(instance, context=context).data
-
-
-class FavoriteSerializer(ModelSerializer):
-    class Meta:
-        model = Favorite
-        fields = (
-            'recipe',
-            'user',
-        )
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Favorite.objects.all(),
-                fields=('recipe', 'user'),
-                message='Рецепт уже добавлен в избранное',
-            )
+        ingredients = [
+            ingredient.get('id') for ingredient in data.get('ingredients')
         ]
+        if len(ingredients) != len(set(ingredients)):
+            raise ValidationError(
+                'Ингредиенты не должны дублироваться'
+            )
+        return data
 
-    def to_representation(self, instance):
-        return RecipeData(
-            instance.recipe, context=self.context
-        ).data
 
+# class FavoriteSerializer(ModelSerializer):
+#     class Meta:
+#         model = Favorite
+#         fields = (
+#             'recipe',
+#             'user',
+#         )
+#         validators = [
+#             UniqueTogetherValidator(
+#                 queryset=Favorite.objects.all(),
+#                 fields=('recipe', 'user'),
+#                 message='Рецепт уже добавлен в избранное',
+#             )
+#         ]
 
+#     def to_representation(self, instance):
+#         return RecipeData(
+#             instance.recipe, context=self.context
+#         ).data
