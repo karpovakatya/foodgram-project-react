@@ -70,19 +70,20 @@ class UsersViewSet(UserViewSet):
 
     @action(
         detail=True,
-        methods=('POST',),
+        methods=('post',),
         permission_classes=(IsAuthenticated,),
     )
     def subscribe(self, request, id):
-        check_user = User.objects.filter(id=id)
-        if not check_user.exists():
+        """Авторизованный пользователь подписался на автора"""
+        author = User.objects.filter(id=id)
+        if not author.exists():
             return Response(
-                {"detail": "Нельзя подписатся на несуществующего автора"},
+                {'detail': 'Нельзя подписаться на несуществующего автора'},
                 status=status.HTTP_404_NOT_FOUND,
             )
         serializer = SubscribeSerializer(
-            data={"user": self.request.user.id, "author": id},
-            context={"request": request},
+            data={'user': self.request.user.id, 'author': id},
+            context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -90,24 +91,24 @@ class UsersViewSet(UserViewSet):
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, id):
-        check_user = User.objects.filter(id=id)
-        current_user = self.request.user
-        check_subscribe = Subscription.objects.filter(
-            user=current_user, author=id
+        author = User.objects.filter(id=id)
+        user = self.request.user
+        subscription = Subscription.objects.filter(
+            user=user, author=id
         )
-        if not check_user.exists():
+        if not author.exists():
             return Response(
-                {"detail": "Нельзя отписатся от несуществующего автора"},
+                {'detail': 'Нельзя отписаться от несуществующего автора'},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if check_subscribe.exists():
-            check_subscribe.delete()
+        if subscription.exists():
+            subscription.delete()
             return Response(
-                {"detail": "Вы отписались от автора"},
+                {'detail': 'Подписка удалена'},
                 status=status.HTTP_204_NO_CONTENT,
             )
         return Response(
-            {"detail": "Вы уже отписаны от автора"},
+            {'detail': 'Нельзя удалить несуществующую подписку'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -123,9 +124,6 @@ class RecipeViewSet(ModelViewSet):
         if self.request.method in SAFE_METHODS:
             return RecipeSerializer
         return RecipeCreateUpdateDeleteSerializer
-
-    # def perform_create(self, serializer):
-    #     serializer.save(author=self.request.user)
 
     @action(
         detail=False,
