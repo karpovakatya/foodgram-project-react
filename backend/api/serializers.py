@@ -52,13 +52,16 @@ class UsersSerializer(ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        return bool(request
-                    and request.user.is_authenticated
-                    and Subscription.objects.filter(
-                        user=request.user.id, author=obj.id).exists())
+        return bool(
+            request
+            and request.user.is_authenticated
+            and Subscription.objects.filter(
+                user=request.user.id, author=obj.id
+            ).exists()
+        )
 
 
-class SubscribeSerializer(UsersSerializer):
+class SubscribeSerializer(ModelSerializer):
     class Meta:
         model = Subscription
         fields = (
@@ -89,16 +92,7 @@ class SubscriptionSerializer(UsersSerializer):
 
     class Meta:
         model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes_count',
-            'recipes',
-        )
+        fields = UsersSerializer.Meta.fields + ('recipes_count', 'recipes',)
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
@@ -109,8 +103,7 @@ class SubscriptionSerializer(UsersSerializer):
         recipes = obj.recipes.all()
         try:
             if limit:
-                limit = int(limit)
-                recipes = recipes[:limit]
+                recipes = recipes[:int(limit)]
         except ValueError:
             raise ValueError('limit должен быть целым числом')
         serializer = RecipeData(recipes, many=True, read_only=True)
@@ -131,6 +124,19 @@ class IngredientRecipeSerializer(ModelSerializer):
     class Meta:
         model = IngredientRecipe
         fields = ('id', 'amount')
+
+    def validate_id(self, value):
+        if not Ingredient.objects.filter(id=value).exists():
+            raise ValidationError(f'Ингредиент с id={value} не существует')
+        return value
+
+    def validate_amount(self, value):
+        if int(value) <= 0:
+            raise ValidationError('Укажите количество больше 0')
+        return value
+
+    def validate(self, data):
+        return data
 
 
 class RecipeSerializer(ModelSerializer):
@@ -170,16 +176,22 @@ class RecipeSerializer(ModelSerializer):
         )
 
     def get_is_favorited(self, obj):
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return user.favorites.filter(recipe=obj).exists()
+        request = self.context.get('request')
+        user = request.user
+        return bool(
+            request
+            and request.user.is_authenticated
+            and user.favorites.filter(recipe=obj).exists()
+        )
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return user.shopping_cart.filter(recipe=obj).exists()
+        request = self.context.get('request')
+        user = request.user
+        return bool(
+            request
+            and request.user.is_authenticated
+            and user.shopping_cart.filter(recipe=obj).exists()
+        )
 
 
 class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
@@ -205,9 +217,9 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
         )
 
     def to_representation(self, instance):
-        request = self.context.get("request")
+        request = self.context.get('request')
         serializer = RecipeSerializer(
-            instance, context={"request": request}
+            instance, context={'request': request}
         )
         return serializer.data
 
@@ -233,14 +245,12 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        if 'ingredients' in validated_data:
-            IngredientRecipe.objects.filter(recipe=instance).delete()
-            ingredients = validated_data.pop('ingredients')
-            self.add_ingredients(ingredients, instance)
+        IngredientRecipe.objects.filter(recipe=instance).delete()
+        ingredients = validated_data.pop('ingredients')
+        self.add_ingredients(ingredients, instance)
 
-        if 'tags' in validated_data:
-            tags = validated_data.pop('tags')
-            instance.tags.set(tags)
+        tags = validated_data.pop('tags')
+        instance.tags.set(tags)
 
         return super().update(instance, validated_data)
 
@@ -250,8 +260,10 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
         ingredients = data.get('ingredients')
         if not ingredients:
             raise ValidationError('Добавьте ингредиенты')
+
         if not tags:
             raise ValidationError('Укажите хотя бы один тег')
+
         if not image:
             raise ValidationError('Изображение не предоставлено')
 
@@ -259,29 +271,13 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
             raise ValidationError(
                 'Теги не должны дублироваться'
             )
+
         ingredients_list = []
         for ingredient in ingredients:
-            if 'id' not in ingredient or 'amount' not in ingredient:
-                raise ValidationError({
-                    'ingredients': 'Не указано количество или id ингредиента'
-                })
-            id = ingredient['id']
-
-            if not Ingredient.objects.filter(id=id).exists():
-                raise ValidationError({
-                    'ingredients': f"Ингредиент с id={id} не существует"
-                })
-
             if ingredient in ingredients_list:
-                raise ValidationError({
-                    'ingredients': 'Ингредиенты дублируются'
-                })
-
-            if int(ingredient['amount']) <= 0:
-                raise ValidationError({
-                    'amount': 'Укажите количество больше 0'
-                })
-
+                raise ValidationError(
+                    'Ингредиенты не должны дублироваться'
+                )
             ingredients_list.append(ingredient)
 
         return data

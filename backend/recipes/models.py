@@ -52,11 +52,13 @@ class Tag(Model):
 
     name = CharField(
         'Тег',
-        max_length=constants.TAG_NAME_MAX_LENGHT
+        max_length=constants.TAG_NAME_MAX_LENGHT,
+        unique=True
     )
     color = ColorField(
         'Цвет',
-        max_length=constants.TAG_COLOR_MAX_LENGHT
+        max_length=constants.TAG_COLOR_MAX_LENGHT,
+        unique=True
     )
     slug = SlugField(
         'Уникальный слаг',
@@ -96,11 +98,14 @@ class Recipe(Model):
         validators=[
             MinValueValidator(
                 constants.MIN_VALUE,
-                message=(f'Время не может быть менее '
-                         f'{constants.MIN_VALUE} минуты')),
+                message=('Время приготовления не может быть менее '
+                         f'{constants.MIN_VALUE} минуты')
+            ),
             MaxValueValidator(
                 constants.MAX_VALUE,
-                message='Время приготовления слишком большое')
+                message=('Время приготовления не может быть больше '
+                         f'{constants.MAX_VALUE} минут')
+            )
         ]
     )
     ingredients = ManyToManyField(
@@ -131,7 +136,6 @@ class IngredientRecipe(Model):
     ingredient = ForeignKey(
         Ingredient,
         on_delete=CASCADE,
-        related_name='ingredient_recipe'
     )
     recipe = ForeignKey(
         Recipe,
@@ -140,12 +144,19 @@ class IngredientRecipe(Model):
     )
     amount = PositiveSmallIntegerField(
         'Количество',
-        default=1,
-        validators=(MinValueValidator(
-            constants.MIN_VALUE_AMOUNT,
-            message=(f'Количество должно быть не меньше '
-                     f'{constants.MIN_VALUE_AMOUNT}')
-        ),)
+        default=constants.DEFAULT_AMOUNT,
+        validators=[
+            MinValueValidator(
+                constants.MIN_VALUE_AMOUNT,
+                message=('Количество должно быть не меньше '
+                         f'{constants.MIN_VALUE_AMOUNT}')
+            ),
+            MaxValueValidator(
+                constants.MAX_VALUE_AMOUNT,
+                message=('Количество не может быть больше '
+                         f'{constants.MAX_VALUE_AMOUNT}')
+            )
+        ]
     )
 
     class Meta:

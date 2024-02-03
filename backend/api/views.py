@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import filters, status
@@ -74,12 +75,7 @@ class UsersViewSet(UserViewSet):
     )
     def subscribe(self, request, id):
         """Авторизованный пользователь подписался на автора"""
-        author = User.objects.filter(id=id)
-        if not author.exists():
-            return Response(
-                {'detail': 'Нельзя подписаться на несуществующего автора'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        get_object_or_404(User, id=id)
         serializer = SubscribeSerializer(
             data={'user': self.request.user.id, 'author': id},
             context={'request': request},
@@ -90,16 +86,11 @@ class UsersViewSet(UserViewSet):
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, id):
-        author = User.objects.filter(id=id)
+        get_object_or_404(User, id=id)
         user = self.request.user
         subscription = Subscription.objects.filter(
             user=user, author=id
         )
-        if not author.exists():
-            return Response(
-                {'detail': 'Нельзя отписаться от несуществующего автора'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         if subscription.exists():
             subscription.delete()
             return Response(
@@ -192,22 +183,17 @@ class RecipeViewSet(ModelViewSet):
 
     @staticmethod
     def deleting(model, request, pk):
-        recipe = Recipe.objects.filter(id=pk)
+        get_object_or_404(Recipe, id=pk)
         favorite = model.objects.filter(recipe=pk, user=request.user.id)
-        if not recipe.exists():
+        if not favorite.exists():
             return Response(
-                {'detail': 'Рецепт не существует'},
-                status=status.HTTP_404_NOT_FOUND,
+                {'detail': 'Такого рецепта нет'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        if favorite.exists():
-            favorite.delete()
-            return Response(
-                {'detail': 'Рецепт успешно удален'},
-                status=status.HTTP_204_NO_CONTENT,
-            )
+        favorite.delete()
         return Response(
-            {'detail': 'Такого рецепта нет'},
-            status=status.HTTP_400_BAD_REQUEST,
+            {'detail': 'Рецепт успешно удален'},
+            status=status.HTTP_204_NO_CONTENT,
         )
 
 

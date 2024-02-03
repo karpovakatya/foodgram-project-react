@@ -15,12 +15,10 @@ class User(AbstractUser):
         unique=True
     )
     first_name = models.CharField(
-        max_length=constants.NAME_MAX_LENGHT,
-        blank=False
+        max_length=constants.NAME_MAX_LENGHT
     )
     last_name = models.CharField(
-        max_length=constants.NAME_MAX_LENGHT,
-        blank=False
+        max_length=constants.NAME_MAX_LENGHT
     )
 
     class Meta:
