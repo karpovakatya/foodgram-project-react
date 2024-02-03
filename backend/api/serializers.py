@@ -9,8 +9,16 @@ from rest_framework.serializers import (
     PrimaryKeyRelatedField,
     SerializerMethodField,
 )
+from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientRecipe,
+    Recipe,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -279,22 +287,43 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
         return data
 
 
-# class FavoriteSerializer(ModelSerializer):
-#     class Meta:
-#         model = Favorite
-#         fields = (
-#             'recipe',
-#             'user',
-#         )
-#         validators = [
-#             UniqueTogetherValidator(
-#                 queryset=Favorite.objects.all(),
-#                 fields=('recipe', 'user'),
-#                 message='Рецепт уже добавлен в избранное',
-#             )
-#         ]
+class FavoriteSerializer(ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = (
+            'recipe',
+            'user',
+        )
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('recipe', 'user'),
+                message='Рецепт уже добавлен в избранное',
+            )
+        ]
 
-#     def to_representation(self, instance):
-#         return RecipeData(
-#             instance.recipe, context=self.context
-#         ).data
+    def to_representation(self, instance):
+        return RecipeData(
+            instance.recipe, context=self.context
+        ).data
+
+
+class ShoppingCartSerializer(ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = (
+            'recipe',
+            'user',
+        )
+        validators = [
+            UniqueTogetherValidator(
+                queryset=ShoppingCart.objects.all(),
+                fields=('recipe', 'user'),
+                message='Рецепт уже добавлен в корзину',
+            )
+        ]
+
+    def to_representation(self, instance):
+        return RecipeData(
+            instance.recipe, context=self.context
+        ).data

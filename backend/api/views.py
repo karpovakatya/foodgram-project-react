@@ -1,12 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import filters, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     SAFE_METHODS,
     IsAuthenticated,
@@ -30,10 +28,11 @@ from .filters import RecipeFilter
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
+    FavoriteSerializer,
     IngredientSerializer,
     RecipeCreateUpdateDeleteSerializer,
-    RecipeData,
     RecipeSerializer,
+    ShoppingCartSerializer,
     SubscribeSerializer,
     SubscriptionSerializer,
     TagSerializer,
@@ -165,16 +164,9 @@ class RecipeViewSet(ModelViewSet):
     )
     def favorite(self, request, pk=None):
         """Авторизованный пользователь добавляет/удаляет рецепт в избранном"""
-
         if request.method == 'POST':
-            self.recipe_check(pk)
-            return self.adding(Favorite, request.user, pk)
-
-        if request.method == 'DELETE':
-            get_object_or_404(Recipe, pk=pk)
-            return self.deleting(Favorite, request.user, pk)
-
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+            return self.adding(FavoriteSerializer, request, pk)
+        return self.deleting(Favorite, request, pk)
 
     @action(
         detail=True,
@@ -183,41 +175,38 @@ class RecipeViewSet(ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Авторизованный пользователь добавляет/удаляет рецепт в список"""
-
         if request.method == 'POST':
-            self.recipe_check(pk)
-            return self.adding(ShoppingCart, request.user, pk)
+            return self.adding(ShoppingCartSerializer, request, pk)
+        return self.deleting(ShoppingCart, request, pk)
 
-        if request.method == 'DELETE':
-            get_object_or_404(Recipe, pk=pk)
-            return self.deleting(ShoppingCart, request.user, pk)
-
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    def recipe_check(self, pk):
-        if not Recipe.objects.filter(pk=pk).exists():
-            raise ValidationError(
-                {'detail': 'Рецепт с указанным ID не найден.'}
-            )
-
-    def adding(self, model, user, pk):
-        if model.objects.filter(user=user, recipe__id=pk).exists():
-            return Response(
-                {'errors': 'Рецепт уже добавлен в избранное'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        recipe = Recipe.objects.get(pk=pk)
-        model.objects.create(user=user, recipe=recipe)
-        serializer = RecipeData(recipe)
+    @staticmethod
+    def adding(serializ, request, pk):
+        user = request.user
+        serializer = serializ(
+            data={'recipe': pk, 'user': user.id},
+            context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def deleting(self, model, user, pk):
-        obj = model.objects.filter(user=user, recipe__id=pk)
-        if obj.exists():
-            obj.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    @staticmethod
+    def deleting(model, request, pk):
+        recipe = Recipe.objects.filter(id=pk)
+        favorite = model.objects.filter(recipe=pk, user=request.user.id)
+        if not recipe.exists():
+            return Response(
+                {'detail': 'Рецепт не существует'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if favorite.exists():
+            favorite.delete()
+            return Response(
+                {'detail': 'Рецепт успешно удален'},
+                status=status.HTTP_204_NO_CONTENT,
+            )
         return Response(
-            {'errors': 'Рецепт не был добавлен'},
+            {'detail': 'Такого рецепта нет'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
