@@ -1,18 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import F
-from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     IntegerField,
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
-    StringRelatedField,
 )
 
-from recipes.models import Favorite, Ingredient, IngredientRecipe, Recipe, Tag
+from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag
 from users.models import Subscription
 
 User = get_user_model()
