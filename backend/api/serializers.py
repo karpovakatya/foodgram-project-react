@@ -9,10 +9,8 @@ from rest_framework.serializers import (
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
-    ReadOnlyField,
-    CharField,
+    StringRelatedField,
 )
-from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import Favorite, Ingredient, IngredientRecipe, Recipe, Tag
 from users.models import Subscription
@@ -32,7 +30,7 @@ class IngredientSerializer(ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
-class UsersSerializer(UserSerializer):
+class UsersSerializer(ModelSerializer):
     is_subscribed = SerializerMethodField(read_only=True)
 
     class Meta:
@@ -54,7 +52,7 @@ class UsersSerializer(UserSerializer):
                         user=request.user.id, author=obj.id).exists())
 
 
-class SubscribeSerializer(UserSerializer):
+class SubscribeSerializer(UsersSerializer):
     class Meta:
         model = Subscription
         fields = (
@@ -79,11 +77,9 @@ class SubscribeSerializer(UserSerializer):
         return SubscriptionSerializer(instance.user, context=self.context).data
 
 
-class SubscriptionSerializer(ModelSerializer):
-    # recipes_count = ReadOnlyField(source="recipes.count")
+class SubscriptionSerializer(UsersSerializer):
     recipes_count = SerializerMethodField()
     recipes = SerializerMethodField()
-    is_subscribed = SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -101,13 +97,6 @@ class SubscriptionSerializer(ModelSerializer):
     def get_recipes_count(self, obj):
         return obj.recipes.count()
 
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        return bool(request
-                    and request.user.is_authenticated
-                    and Subscription.objects.filter(
-                        user=request.user.id, author=obj.id).exists())
-
     def get_recipes(self, obj):
         request = self.context.get('request')
         limit = request.GET.get('recipes_limit')
@@ -123,6 +112,8 @@ class SubscriptionSerializer(ModelSerializer):
 
 
 class RecipeData(ModelSerializer):
+    image = Base64ImageField()
+
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')

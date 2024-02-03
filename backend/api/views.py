@@ -61,7 +61,7 @@ class UsersViewSet(UserViewSet):
     def subscriptions(self, request):
         """Авторизованный пользователь получает список своих подписок"""
         user = request.user
-        queryset = Subscription.objects.filter(user=user)
+        queryset = User.objects.filter(subscription__user=user)
         pages = self.paginate_queryset(queryset)
         serializer = SubscriptionSerializer(
             pages, many=True, context={'request': request}
@@ -124,8 +124,8 @@ class RecipeViewSet(ModelViewSet):
             return RecipeSerializer
         return RecipeCreateUpdateDeleteSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+    # def perform_create(self, serializer):
+    #     serializer.save(author=self.request.user)
 
     @action(
         detail=False,
