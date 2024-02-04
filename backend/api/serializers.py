@@ -256,16 +256,12 @@ class RecipeCreateUpdateDeleteSerializer(ModelSerializer):
 
     def validate(self, data):
         tags = data.get('tags')
-        image = data.get('image')
         ingredients = data.get('ingredients')
         if not ingredients:
             raise ValidationError('Добавьте ингредиенты')
 
         if not tags:
             raise ValidationError('Укажите хотя бы один тег')
-
-        if not image:
-            raise ValidationError('Изображение не предоставлено')
 
         if len(tags) != len(set(tags)):
             raise ValidationError(
