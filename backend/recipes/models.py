@@ -136,6 +136,7 @@ class IngredientRecipe(Model):
     ingredient = ForeignKey(
         Ingredient,
         on_delete=CASCADE,
+        related_name='ingredient_recipe'
     )
     recipe = ForeignKey(
         Recipe,
