@@ -47,7 +47,7 @@ POST /api/auth/token/login/
   "email": "string"
 }
 
-201
+201 Created
 {
   "auth_token": "string"
 }
@@ -56,7 +56,7 @@ POST /api/auth/token/login/
 ```python
 GET /api/recipes/
 
-200
+200 OK
 {
   "count": 123,
   "next": "http://foodgram.example.org/api/recipes/?page=4",
