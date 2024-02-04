@@ -2,6 +2,7 @@
 ![Foodgram workflow](https://github.com/karpovakatya/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
 #  Описание проекта
+Проект доступен по адресу: http://foodgram.servecounterstrike.com
 [Проект Фудграм](http://foodgram.servecounterstrike.com)
 Продуктовый помощник Фудграм - это приложение, в котором пользователи публикуют рецепты, могут подписываться на публикации других авторов и добавлять рецепты в избранное. Сервис «Список покупок» позволит пользователю создавать список продуктов, которые нужно купить для приготовления выбранных блюд.
 
