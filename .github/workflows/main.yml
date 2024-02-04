@@ -12,6 +12,7 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -39,6 +40,10 @@ jobs:
         POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         DB_HOST: 127.0.0.1
         DB_PORT: 5432
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+        DEBUG: False
+        USE_SQLITE: False
       run: |
         python -m flake8 backend/
 
