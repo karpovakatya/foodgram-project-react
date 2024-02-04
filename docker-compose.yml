@@ -4,6 +4,7 @@ volumes:
   pg_data:
   static:
   media:
+  docs:
 
 services:
   db:
@@ -19,6 +20,7 @@ services:
     volumes:
       - static:/backend_static
       - media:/app/media
+      - docs:/app/api/docs/
   frontend:
     build: ./frontend/
     env_file: .env
@@ -36,3 +38,4 @@ services:
     volumes:
       - static:/static/
       - media:/media/
+      - docs:/usr/share/nginx/html/api/docs/
