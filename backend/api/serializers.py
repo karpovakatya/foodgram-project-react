@@ -130,14 +130,6 @@ class IngredientRecipeSerializer(ModelSerializer):
             raise ValidationError(f'Ингредиент с id={value} не существует')
         return value
 
-    def validate_amount(self, value):
-        if int(value) <= 0:
-            raise ValidationError('Укажите количество больше 0')
-        return value
-
-    def validate(self, data):
-        return data
-
 
 class RecipeSerializer(ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)

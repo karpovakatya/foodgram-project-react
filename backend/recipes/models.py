@@ -26,7 +26,6 @@ class Ingredient(Model):
     name = CharField(
         'Ингредиент',
         max_length=constants.INGREDIENT_NAME_MAX_LENGHT,
-        unique=True
     )
     measurement_unit = CharField(
         'Единицы измерения',
