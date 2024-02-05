@@ -9,7 +9,10 @@ class Command(BaseCommand):
     help = 'Import ingredients from a CSV file'
 
     def add_arguments(self, parser):
-        parser.add_argument('csv_file_path', type=str, help='The CSV file path')
+        parser.add_argument(
+            'csv_file_path',
+            type=str, help='The CSV file path'
+        )
 
     def handle(self, *args, **kwargs):
         file_path = kwargs['csv_file_path']
