@@ -14,8 +14,6 @@
 - созданы, развёрнуты и запущены на сервере мультиконтейнерные приложения
 - настроена CI/CD в GitHub Actions
 
-Проект доступен по адресу: http://foodgram.servecounterstrike.com
-
 # Стек технологий
 Python 3.9, DRF, React, PostgreSQL, gunicorn, yaml, API, Docker, Nginx, Gunicorn
 
